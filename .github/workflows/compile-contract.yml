@@ -1,0 +1,43 @@
+name: Compile Contract for Preview
+
+on:
+  workflow_dispatch:  # Manual trigger
+  push:
+    paths:
+      - 'contract/src/bboard.compact'
+
+jobs:
+  compile:
+    runs-on: macos-latest  # Use macOS runner
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Compact
+        run: |
+          curl --proto '=https' --tlsv1.2 -LsSf \
+            https://github.com/midnightntwrk/compact/releases/latest/download/compact-installer.sh | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Install Compact 0.27.0
+        run: compact update 0.27.0
+
+      - name: Compile Contract
+        run: |
+          cd contract
+          compact compile src/bboard.compact ./src/managed/bboard
+
+      - name: Upload Compiled Contract
+        uses: actions/upload-artifact@v4
+        with:
+          name: compiled-contract
+          path: contract/src/managed/bboard/
+          retention-days: 7
+
+      - name: Commit compiled artifacts
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add contract/src/managed/
+          git diff --staged --quiet || git commit -m "chore: compile contract with Compact 0.27.0 for Preview"
+          git push
