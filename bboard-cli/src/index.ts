@@ -36,17 +36,13 @@ import {
   type PrivateStateId,
   bboardPrivateStateKey,
 } from '../../api/src/index';
-import { ledger, type Ledger, State } from '../../contract/src/managed/bboard/contract/index.cjs';
+import { ledger, type Ledger, State } from '../../contract/src/managed/bboard/contract/index.js';
 import {
-  type BalancedTransaction,
-  createBalancedTx,
-  type MidnightProvider,
-  type UnbalancedTransaction,
   type WalletProvider,
 } from '@midnight-ntwrk/midnight-js-types';
 import { type Wallet } from '@midnight-ntwrk/wallet-api';
 import * as Rx from 'rxjs';
-import { type CoinInfo, nativeToken, Transaction, type TransactionId } from '@midnight-ntwrk/ledger';
+import { type CoinInfo, nativeToken, Transaction, type TransactionId } from '@midnight-ntwrk/ledger-v6';
 import { Transaction as ZswapTransaction } from '@midnight-ntwrk/zswap';
 import { NodeZkConfigProvider } from '@midnight-ntwrk/midnight-js-node-zk-config-provider';
 import { type Resource, WalletBuilder } from '@midnight-ntwrk/wallet';
@@ -239,28 +235,25 @@ const mainLoop = async (providers: BBoardProviders, rli: Interface, logger: Logg
 };
 
 /* **********************************************************************
- * createWalletAndMidnightProvider: returns an object that
- * satifies both the WalletProvider and MidnightProvider
- * interfaces, both implemented in terms of the given wallet.
+ * createWalletProvider: returns an object that implements the
+ * WalletProvider interface in terms of the given wallet.
  */
 
-const createWalletAndMidnightProvider = async (wallet: Wallet): Promise<WalletProvider & MidnightProvider> => {
+const createWalletProvider = async (wallet: Wallet): Promise<WalletProvider> => {
   const state = await Rx.firstValueFrom(wallet.state());
   return {
-    coinPublicKey: state.coinPublicKey,
-    encryptionPublicKey: state.encryptionPublicKey,
-    balanceTx(tx: UnbalancedTransaction, newCoins: CoinInfo[]): Promise<BalancedTransaction> {
-      return wallet
-        .balanceTransaction(
-          ZswapTransaction.deserialize(tx.serialize(getLedgerNetworkId()), getZswapNetworkId()),
-          newCoins,
-        )
-        .then((tx) => wallet.proveTransaction(tx))
-        .then((zswapTx) => Transaction.deserialize(zswapTx.serialize(getZswapNetworkId()), getLedgerNetworkId()))
-        .then(createBalancedTx);
-    },
-    submitTx(tx: BalancedTransaction): Promise<TransactionId> {
-      return wallet.submitTransaction(tx);
+    getCoinPublicKey: () => state.coinPublicKey,
+    getEncryptionPublicKey: () => state.encryptionPublicKey,
+    balanceTx: async (tx, newCoins, ttl) => {
+      const result = await wallet.balanceTransaction(tx as any, newCoins || []);
+      if (result.type === 'BalanceTransactionToProve') {
+        const provenTx = await wallet.proveTransaction(result.transactionToProve as any);
+        return {
+          type: 'NothingToProve',
+          transaction: provenTx as any,
+        };
+      }
+      return result as any;
     },
   };
 };
@@ -410,16 +403,16 @@ export const run = async (config: Config, logger: Logger, dockerEnv?: DockerComp
   const wallet = await buildWallet(config, rli, logger);
   try {
     if (wallet !== null) {
-      const walletAndMidnightProvider = await createWalletAndMidnightProvider(wallet);
+      const walletProvider = await createWalletProvider(wallet);
       const providers = {
         privateStateProvider: levelPrivateStateProvider<PrivateStateId>({
           privateStateStoreName: config.privateStateStoreName,
+          walletProvider: walletProvider,
         }),
         publicDataProvider: indexerPublicDataProvider(config.indexer, config.indexerWS),
         zkConfigProvider: new NodeZkConfigProvider<'post' | 'takeDown'>(config.zkConfigPath),
         proofProvider: httpClientProofProvider(config.proofServer),
-        walletProvider: walletAndMidnightProvider,
-        midnightProvider: walletAndMidnightProvider,
+        walletProvider: walletProvider,
       };
       await mainLoop(providers, rli, logger);
     }

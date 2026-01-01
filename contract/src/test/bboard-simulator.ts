@@ -24,7 +24,7 @@ import {
   Contract,
   type Ledger,
   ledger,
-} from "../managed/bboard/contract/index.cjs";
+} from "../managed/bboard/contract/index.js";
 import { type BBoardPrivateState, witnesses } from "../witnesses.js";
 
 /**

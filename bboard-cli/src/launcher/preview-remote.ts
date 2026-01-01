@@ -13,5 +13,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-export * from "./managed/bboard/contract/index.js";
-export * from "./witnesses";
+import { createLogger } from '../logger-utils.js';
+import { run } from '../index.js';
+import { PreviewConfig } from '../config.js';
+
+const config = new PreviewConfig();
+config.setNetworkId();
+const logger = await createLogger(config.logDir);
+await run(config, logger);

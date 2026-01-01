@@ -14,6 +14,7 @@
     "testnet-remote": "node --experimental-specifier-resolution=node --loader ts-node/esm src/launcher/testnet-remote.ts",
     "testnet-remote-ps": "node --experimental-specifier-resolution=node dist/launcher/testnet-remote-start-proof-server.js",
     "testnet-local": "node --experimental-specifier-resolution=node dist/launcher/testnet-local.js",
+    "preview-remote": "node --experimental-specifier-resolution=node --loader ts-node/esm src/launcher/preview-remote.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {

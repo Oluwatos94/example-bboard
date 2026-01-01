@@ -19,7 +19,7 @@
  * @packageDocumentation
  */
 
-import contractModule from '../../contract/src/managed/bboard/contract/index.cjs';
+import contractModule from '../../contract/src/managed/bboard/contract/index.js';
 const { Contract, ledger, pureCircuits, State } = contractModule;
 // import { Contract, ledger, pureCircuits, State } from '../../contract/src/index';
 
@@ -32,7 +32,7 @@ import {
   type DeployedBBoardContract,
   bboardPrivateStateKey,
 } from './common-types.js';
-// import { Contract, ledger, pureCircuits, State } from '../../contract/src/managed/bboard/contract/index.cjs';
+// import { Contract, ledger, pureCircuits, State } from '../../contract/src/managed/bboard/contract/index.js';
 import { type BBoardPrivateState, createBBoardPrivateState, witnesses } from '../../contract/src/index';
 import * as utils from './utils/index.js';
 import { deployContract, findDeployedContract } from '@midnight-ntwrk/midnight-js-contracts';
